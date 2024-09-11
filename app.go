@@ -18,20 +18,19 @@ type App struct {
 }
 
 type QualityInfo struct {
-	Quality      string
-	AudioQuality string
-	MimeType     string
+	Quality      string `json:"quality" ts_type:"string"`
+	AudioQuality string `json:"audioQuality" ts_type:"string"`
+	MimeType     string `json:"mimeType" ts_type:"string"`
 }
 
 type Info struct {
-	Author      string
-	Title       string
-	Duration    time.Duration
-	PublishDate time.Time
-	QualityInfo []QualityInfo
+	Author      string             `json:"author" ts_type:"string"`
+	Title       string             `json:"title" ts_type:"string"`
+	Duration    time.Duration      `json:"duration" ts_type:"Date" ts_transform:"new Date(__VALUE__)"`
+	PublishDate time.Time          `json:"time" ts_type:"Date" ts_transform:"new Date(__VALUE__)"`
+	QualityInfo []QualityInfo      `json:"qualityInfo" ts_type:"QualityInfo[]"`
+	Thumbnails  youtube.Thumbnails `json:"thumbnails" ts_type:"{URL: string,Width: number,Height: number}[]"`
 }
-
-var client = youtube.Client{}
 
 // NewApp creates a new App application struct
 func NewApp() *App {
@@ -77,6 +76,7 @@ func (a *App) GetImportantInfo(videoUrl string) (Info, error) {
 		Duration:    video.Duration,
 		PublishDate: video.PublishDate,
 		QualityInfo: qualityInfo,
+		Thumbnails:  video.Thumbnails,
 	}
 
 	return info, err
