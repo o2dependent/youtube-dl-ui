@@ -1,0 +1,10 @@
+---
+import Layout from "../layouts/Layout.astro";
+import LoginHero from "@/components/LoginHero.svelte";
+---
+
+<Layout title="Welcome to Astro.">
+	<main class="h-full">
+		<LoginHero client:only />
+	</main>
+</Layout>
