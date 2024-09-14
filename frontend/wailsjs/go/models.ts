@@ -3,8 +3,7 @@ export namespace main {
 	export class Info {
 	    author: string;
 	    title: string;
-	    duration: Date;
-	    time: Date;
+	    duration: string;
 	    qualityInfo: QualityInfo[];
 	    thumbnails: {URL: string,Width: number,Height: number}[];
 	
@@ -16,8 +15,7 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.author = source["author"];
 	        this.title = source["title"];
-	        this.duration = new Date(source["duration"]);
-	        this.time = new Date(source["time"]);
+	        this.duration = source["duration"];
 	        this.qualityInfo = source["qualityInfo"];
 	        this.thumbnails = source["thumbnails"];
 	    }

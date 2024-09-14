@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"time"
 
 	"github.com/kkdai/youtube/v2"
 )
@@ -26,8 +25,7 @@ type QualityInfo struct {
 type Info struct {
 	Author      string             `json:"author" ts_type:"string"`
 	Title       string             `json:"title" ts_type:"string"`
-	Duration    time.Duration      `json:"duration" ts_type:"Date" ts_transform:"new Date(__VALUE__)"`
-	PublishDate time.Time          `json:"time" ts_type:"Date" ts_transform:"new Date(__VALUE__)"`
+	Duration    string             `json:"duration" ts_type:"string"`
 	QualityInfo []QualityInfo      `json:"qualityInfo" ts_type:"QualityInfo[]"`
 	Thumbnails  youtube.Thumbnails `json:"thumbnails" ts_type:"{URL: string,Width: number,Height: number}[]"`
 }
@@ -73,8 +71,7 @@ func (a *App) GetImportantInfo(videoUrl string) (Info, error) {
 	info := Info{
 		Author:      video.Author,
 		Title:       video.Title,
-		Duration:    video.Duration,
-		PublishDate: video.PublishDate,
+		Duration:    video.Duration.String(),
 		QualityInfo: qualityInfo,
 		Thumbnails:  video.Thumbnails,
 	}
