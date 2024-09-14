@@ -48,9 +48,7 @@
 			}
 			(audioQuality = newAudioQuality.map((v) => ({
 				value: v,
-				label: v
-					? capitalize(v.replace("AUDIO_QUALITY_", "").toLowerCase())
-					: "None",
+				label: v ? v.replace("AUDIO_QUALITY_", "").toLowerCase() : "none",
 			}))),
 				(fileExt = newFileExt.map((v) => ({ value: v, label: v })));
 			quality = newQuality.map((v) => ({ value: v, label: v }));
