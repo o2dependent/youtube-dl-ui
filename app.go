@@ -79,7 +79,7 @@ func (a *App) GetImportantInfo(videoUrl string) (Info, error) {
 	return info, err
 }
 
-func (a *App) Download(videoUrl string, quality string, audioQuality string) {
+func (a *App) Download(videoUrl string, quality string, audioQuality string, fileExt string) {
 	videoID, err := youtube.ExtractVideoID(videoUrl)
 	if err != nil {
 		panic(err)
@@ -94,9 +94,9 @@ func (a *App) Download(videoUrl string, quality string, audioQuality string) {
 		panic(err)
 	}
 
-	videoFileName := video.Title + "-tmp-video.mp4"
-	audioFileName := video.Title + "-tmp-audio.mp4"
-	outputFileName := video.Title + ".mp4"
+	videoFileName := video.Title + "-tmp-video." + fileExt
+	audioFileName := video.Title + "-tmp-audio." + fileExt
+	outputFileName := video.Title + "." + fileExt
 
 	// Video File
 	fmt.Println("---- VIDEO ONLY ----")
@@ -107,7 +107,7 @@ func (a *App) Download(videoUrl string, quality string, audioQuality string) {
 		fmt.Println(f.Quality)
 		fmt.Println(f.MimeType)
 
-		return f.Quality == quality && strings.Contains(f.MimeType, "video/mp4")
+		return f.Quality == quality && strings.Contains(f.MimeType, "video/"+fileExt)
 	})
 	fmt.Println(formats)
 
@@ -137,7 +137,7 @@ func (a *App) Download(videoUrl string, quality string, audioQuality string) {
 		fmt.Println(f.Quality)
 		fmt.Println(f.MimeType)
 
-		return strings.Contains(f.MimeType, "audio/mp4")
+		return strings.Contains(f.MimeType, "audio/"+fileExt)
 	})
 
 	audioStream, _, err := client.GetStream(video, &formats[0])

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Button, type Selected } from "bits-ui";
-	import { GetImportantInfo } from "wails/go/main/App";
+	import { Download, GetImportantInfo } from "wails/go/main/App";
 	import InputSelect from "./InputSelect.svelte";
 	import { capitalize } from "@/utils/capitalize";
 
@@ -11,7 +11,7 @@
 	let info: Awaited<ReturnType<typeof GetImportantInfo>> | null = null;
 
 	/**
-	 * Combobox inputs and handlers
+	 * Select inputs and handlers
 	 */
 	let fileExtInput = "";
 	let fileExt: Selected<string>[] = [];
@@ -21,6 +21,14 @@
 
 	let audioQualityInput = "";
 	let audioQuality: Selected<string>[] = [];
+
+	let downloadDisabled = true;
+
+	$: downloadDisabled = !(
+		fileExt.some((v) => v.value === fileExtInput) &&
+		quality.some((v) => v.value === qualityInput) &&
+		audioQuality.some((v) => v.value === audioQualityInput)
+	);
 
 	/**
 	 * Functions
@@ -51,7 +59,7 @@
 				label: v ? v.replace("AUDIO_QUALITY_", "").toLowerCase() : "none",
 			}))),
 				(fileExt = newFileExt.map((v) => ({ value: v, label: v })));
-			quality = newQuality.map((v) => ({ value: v, label: v }));
+			quality = newQuality.map((v) => ({ value: v, label: formatQuality(v) }));
 		} else {
 			info = null;
 			audioQuality = [];
@@ -67,6 +75,31 @@
 		else if (q === "small") return "240p";
 		else if (q === "tiny") return "144p";
 		return q;
+	};
+
+	const onDownload = async () => {
+		const error: {
+			fileExt: string | null;
+			quality: string | null;
+			audioQuality: string | null;
+		} = {
+			audioQuality: null,
+			fileExt: null,
+			quality: null,
+		};
+		if (!fileExt.some((v) => v.value === fileExtInput))
+			error.fileExt = "fileExt invalid";
+		if (!quality.some((v) => v.value === qualityInput))
+			error.quality = "quality invalid";
+		if (!audioQuality.some((v) => v.value === audioQualityInput))
+			error.audioQuality = "audioQuality invalid";
+		if (error.fileExt || error.quality || error.audioQuality) {
+			console.log(error);
+			return;
+		}
+		try {
+			await Download(url, qualityInput, audioQualityInput, fileExtInput);
+		} catch (error) {}
 	};
 </script>
 
@@ -122,6 +155,7 @@
 				class="flex flex-col gap-2"
 				on:submit|preventDefault={() => {
 					console.log(audioQualityInput, qualityInput, fileExtInput);
+					onDownload();
 				}}
 			>
 				<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -146,6 +180,7 @@
 				</div>
 
 				<Button.Root
+					disabled={downloadDisabled}
 					type="submit"
 					class="inline-flex h-12 items-center justify-center rounded-input bg-dark
 			px-[21px] text-[15px] font-semibold text-background shadow-mini
