@@ -132,21 +132,18 @@
 						bind:inputValue={audioQualityInput}
 						name="audioQuality"
 						placeholder="Audio Quality"
-						label="Audio Quality"
 					/>
 					<InputSelect
 						bind:items={quality}
 						bind:inputValue={qualityInput}
 						name="quality"
 						placeholder="Video Quality"
-						label="Video Quality"
 					/>
 					<InputSelect
 						bind:items={fileExt}
 						bind:inputValue={fileExtInput}
 						name="fileExt"
 						placeholder="File Extension"
-						label="File Extension"
 					/>
 				</div>
 
