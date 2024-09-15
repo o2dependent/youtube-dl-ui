@@ -98,22 +98,63 @@ func (a *App) GetDirectory() (string, bool) {
 	return dir, false
 }
 
-func (a *App) Download(_dir string, videoUrl string, quality string, audioQuality string, fileExt string) bool {
-	if _dir != dir {
-		return false
+func downloadAudioOnly(client youtube.Client, video *youtube.Video, audioQuality string, fileExt string) bool {
+	outputFileName := dir + "/" + video.Title + "." + fileExt
+	// Audio File
+	formats := video.Formats.WithAudioChannels() // only get videos with audio
+	formats = formats.Select(func(f youtube.Format) bool {
+		return f.AudioQuality == audioQuality && strings.Contains(f.MimeType, "audio/"+fileExt)
+	})
+
+	audioStream, _, err := client.GetStream(video, &formats[0])
+	if err != nil {
+		panic(err)
 	}
-	videoID, err := youtube.ExtractVideoID(videoUrl)
+	defer audioStream.Close()
+
+	audioFile, err := os.Create(outputFileName)
+	if err != nil {
+		panic(err)
+	}
+	defer audioFile.Close()
+
+	_, err = io.Copy(audioFile, audioStream)
 	if err != nil {
 		panic(err)
 	}
 
-	client := youtube.Client{}
+	return true
+}
 
-	video, err := client.GetVideo(videoID)
+func downloadVideoOnly(client youtube.Client, video *youtube.Video, quality string, fileExt string) bool {
+	outputFileName := dir + "/" + video.Title + "." + fileExt
 
+	formats := video.Formats
+	formats = formats.Select(func(f youtube.Format) bool {
+		return f.Quality == quality && strings.Contains(f.MimeType, "video/"+fileExt)
+	})
+
+	stream, _, err := client.GetStream(video, &formats[0])
 	if err != nil {
 		panic(err)
 	}
+	defer stream.Close()
+
+	videoFile, err := os.Create(outputFileName)
+	if err != nil {
+		panic(err)
+	}
+	defer videoFile.Close()
+
+	_, err = io.Copy(videoFile, stream)
+	if err != nil {
+		panic(err)
+	}
+
+	return true
+}
+
+func downloadAudioVideo(client youtube.Client, video *youtube.Video, quality string, audioQuality string, fileExt string) bool {
 
 	videoFileName := "tmp-video"
 	audioFileName := "tmp-audio"
@@ -145,7 +186,7 @@ func (a *App) Download(_dir string, videoUrl string, quality string, audioQualit
 	// Audio File
 	formats = video.Formats.WithAudioChannels() // only get videos with audio
 	formats = formats.Select(func(f youtube.Format) bool {
-		return strings.Contains(f.MimeType, "audio/"+fileExt)
+		return f.AudioQuality == audioQuality && strings.Contains(f.MimeType, "audio/"+fileExt)
 	})
 
 	audioStream, _, err := client.GetStream(video, &formats[0])
@@ -172,4 +213,32 @@ func (a *App) Download(_dir string, videoUrl string, quality string, audioQualit
 	}
 
 	return true
+}
+
+func (a *App) Download(_dir string, videoUrl string, quality string, audioQuality string, fileExt string) bool {
+	if _dir != dir {
+		return false
+	}
+	videoID, err := youtube.ExtractVideoID(videoUrl)
+	if err != nil {
+		panic(err)
+	}
+
+	client := youtube.Client{}
+
+	video, err := client.GetVideo(videoID)
+
+	if err != nil {
+		panic(err)
+	}
+
+	if quality != "" && audioQuality == "" { // VIDEO ONLY
+		return downloadVideoOnly(client, video, quality, fileExt)
+	} else if quality == "" && audioQuality != "" { // AUDIO ONLY
+		return downloadAudioOnly(client, video, audioQuality, fileExt)
+	} else if quality != "" && audioQuality != "" { // AUDIO & VIDEO
+		return downloadAudioVideo(client, video, quality, audioQuality, fileExt)
+	} else {
+		return false
+	}
 }
