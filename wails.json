@@ -1,6 +1,6 @@
 {
 	"$schema": "https://wails.io/schemas/config.v2.json",
-	"name": "youtube-dl-ui",
+	"name": "Lowky YouTube Downloader",
 	"outputfilename": "youtube-dl-ui",
 	"frontend:install": "bun install",
 	"frontend:build": "bun run build",
