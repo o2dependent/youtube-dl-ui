@@ -1,15 +1,14 @@
 <script lang="ts">
 	import { Button, type Selected } from "bits-ui";
-	import { Download, GetImportantInfo } from "wails/go/main/App";
+	import { Download, GetDirectory, GetImportantInfo } from "wails/go/main/App";
 	import InputSelect from "./InputSelect.svelte";
-	import { capitalize } from "@/utils/capitalize";
 
 	/**
 	 * Data to be used for init info, download, and verification pre-download
 	 */
 	let url = "";
 	let info: Awaited<ReturnType<typeof GetImportantInfo>> | null = null;
-
+	let dir = "";
 	/**
 	 * Select inputs and handlers
 	 */
@@ -98,7 +97,7 @@
 			return;
 		}
 		try {
-			await Download(url, qualityInput, audioQualityInput, fileExtInput);
+			await Download(dir, url, qualityInput, audioQualityInput, fileExtInput);
 		} catch (error) {}
 	};
 </script>
@@ -106,6 +105,28 @@
 <div class="flex flex-col items-center h-full w-full">
 	<div class="prose prose-invert container mx-auto px-4 w-full py-6">
 		<h1 class="w-full text-center">Lowky youtube-dl UI</h1>
+		<button
+			on:click={async () => {
+				const _dir = await GetDirectory();
+				console.log(_dir);
+				if (typeof _dir === "string") {
+					dir = _dir;
+				}
+			}}
+			class="mb-4 h-input-sm w-full rounded-10px border border-border-input bg-background pl-4 pr-0 text-sm text-foreground flex items-center"
+		>
+			<p class="flex-grow w-full m-0 text-left" class:opacity-50={!dir}>
+				{!!dir ? dir : "Select directory"}
+			</p>
+			<Button.Root
+				type="button"
+				class="inline-flex h-full items-center justify-center rounded-input bg-dark
+			px-[21px] text-[15px] font-semibold text-background shadow-mini
+			hover:bg-dark/95 active:scale-98 active:transition-all"
+			>
+				Select
+			</Button.Root>
+		</button>
 		<!-- FORM -->
 		<form on:submit|preventDefault={findVideoInfo} class="w-full flex gap-2">
 			<div class="relative w-full">

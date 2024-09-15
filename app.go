@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/kkdai/youtube/v2"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // App struct
@@ -29,6 +30,8 @@ type Info struct {
 	QualityInfo []QualityInfo      `json:"qualityInfo" ts_type:"QualityInfo[]"`
 	Thumbnails  youtube.Thumbnails `json:"thumbnails" ts_type:"{URL: string,Width: number,Height: number}[]"`
 }
+
+var dir string = "/"
 
 // NewApp creates a new App application struct
 func NewApp() *App {
@@ -79,7 +82,27 @@ func (a *App) GetImportantInfo(videoUrl string) (Info, error) {
 	return info, err
 }
 
-func (a *App) Download(videoUrl string, quality string, audioQuality string, fileExt string) {
+func (a *App) GetDirectory() (string, bool) {
+	_dir, err := runtime.OpenDirectoryDialog(a.ctx,
+		runtime.OpenDialogOptions{DefaultDirectory: dir,
+			Title:                "Select Directory to download",
+			ShowHiddenFiles:      true,
+			CanCreateDirectories: true,
+		})
+
+	dir = _dir
+
+	if err != nil {
+		return "", true
+	}
+
+	return dir, false
+}
+
+func (a *App) Download(_dir string, videoUrl string, quality string, audioQuality string, fileExt string) bool {
+	if _dir != dir {
+		return false
+	}
 	videoID, err := youtube.ExtractVideoID(videoUrl)
 	if err != nil {
 		panic(err)
@@ -94,9 +117,9 @@ func (a *App) Download(videoUrl string, quality string, audioQuality string, fil
 		panic(err)
 	}
 
-	videoFileName := video.Title + "-tmp-video." + fileExt
-	audioFileName := video.Title + "-tmp-audio." + fileExt
-	outputFileName := video.Title + "." + fileExt
+	videoFileName := dir + "/" + video.Title + "-tmp-video." + fileExt
+	audioFileName := dir + "/" + video.Title + "-tmp-audio." + fileExt
+	outputFileName := dir + "/" + video.Title + "." + fileExt
 
 	// Video File
 	fmt.Println("---- VIDEO ONLY ----")
@@ -166,4 +189,6 @@ func (a *App) Download(videoUrl string, quality string, audioQuality string, fil
 	// Delete video and audio file
 	os.Remove(videoFileName)
 	os.Remove(audioFileName)
+
+	return true
 }
