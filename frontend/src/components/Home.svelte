@@ -6,9 +6,24 @@
 	/**
 	 * Data to be used for init info, download, and verification pre-download
 	 */
+	let urlInput = "";
 	let url = "";
 	let info: Awaited<ReturnType<typeof GetImportantInfo>> | null = null;
 	let dir = "";
+	let errors: {
+		fileExt: string | null;
+		quality: string | null;
+		audioQuality: string | null;
+		dir: string | null;
+		general: string | null;
+	} = {
+		audioQuality: null,
+		fileExt: null,
+		quality: null,
+		dir: null,
+		general: null,
+	};
+
 	/**
 	 * Select inputs and handlers
 	 */
@@ -33,8 +48,15 @@
 	 * Functions
 	 */
 	const findVideoInfo = async () => {
-		const i = await GetImportantInfo(url);
+		let i: typeof info | null = null;
+		try {
+			i = await GetImportantInfo(urlInput);
+		} catch (error) {
+			i = null;
+			errors = { ...errors, general: error as string };
+		}
 		if (i) {
+			url = urlInput;
 			info = i;
 			const newFileExt: string[] = [];
 			const newQuality: string[] = [];
@@ -58,7 +80,14 @@
 				label: v ? v.replace("AUDIO_QUALITY_", "").toLowerCase() : "none",
 			}))),
 				(fileExt = newFileExt.map((v) => ({ value: v, label: v })));
-			quality = newQuality.map((v) => ({ value: v, label: formatQuality(v) }));
+			quality = [
+				{ value: "", label: "none" },
+				...newQuality.map((v) => ({ value: v, label: formatQuality(v) })),
+			];
+
+			qualityInput = "";
+			audioQualityInput = "";
+			fileExtInput = "";
 		} else {
 			info = null;
 			audioQuality = [];
@@ -77,23 +106,14 @@
 	};
 
 	const onDownload = async () => {
-		const error: {
-			fileExt: string | null;
-			quality: string | null;
-			audioQuality: string | null;
-		} = {
-			audioQuality: null,
-			fileExt: null,
-			quality: null,
-		};
 		if (!fileExt.some((v) => v.value === fileExtInput))
-			error.fileExt = "fileExt invalid";
+			errors.fileExt = "fileExt invalid";
 		if (!quality.some((v) => v.value === qualityInput))
-			error.quality = "quality invalid";
+			errors.quality = "quality invalid";
 		if (!audioQuality.some((v) => v.value === audioQualityInput))
-			error.audioQuality = "audioQuality invalid";
-		if (error.fileExt || error.quality || error.audioQuality) {
-			console.log(error);
+			errors.audioQuality = "audioQuality invalid";
+		if (errors.fileExt || errors.quality || errors.audioQuality) {
+			console.log(errors);
 			return;
 		}
 		try {
@@ -137,7 +157,7 @@
 				>
 				<input
 					class="h-input w-full rounded-10px border border-border-input bg-background pl-10 pr-2 text-sm text-foreground"
-					bind:value={url}
+					bind:value={urlInput}
 				/>
 			</div>
 			<Button.Root

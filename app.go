@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -111,28 +110,20 @@ func (a *App) Download(_dir string, videoUrl string, quality string, audioQualit
 	client := youtube.Client{}
 
 	video, err := client.GetVideo(videoID)
-	fmt.Println(video.Author)
 
 	if err != nil {
 		panic(err)
 	}
 
-	videoFileName := dir + "/" + video.Title + "-tmp-video." + fileExt
-	audioFileName := dir + "/" + video.Title + "-tmp-audio." + fileExt
+	videoFileName := "tmp-video"
+	audioFileName := "tmp-audio"
 	outputFileName := dir + "/" + video.Title + "." + fileExt
 
 	// Video File
-	fmt.Println("---- VIDEO ONLY ----")
 	formats := video.Formats
 	formats = formats.Select(func(f youtube.Format) bool {
-		fmt.Println(f.AudioQuality)
-		fmt.Println(f.AudioSampleRate)
-		fmt.Println(f.Quality)
-		fmt.Println(f.MimeType)
-
 		return f.Quality == quality && strings.Contains(f.MimeType, "video/"+fileExt)
 	})
-	fmt.Println(formats)
 
 	stream, _, err := client.GetStream(video, &formats[0])
 	if err != nil {
@@ -140,26 +131,20 @@ func (a *App) Download(_dir string, videoUrl string, quality string, audioQualit
 	}
 	defer stream.Close()
 
-	file, err := os.Create(videoFileName)
+	videoFile, err := os.CreateTemp("", videoFileName)
 	if err != nil {
 		panic(err)
 	}
-	defer file.Close()
+	defer os.Remove(videoFile.Name())
 
-	_, err = io.Copy(file, stream)
+	_, err = io.Copy(videoFile, stream)
 	if err != nil {
 		panic(err)
 	}
 
 	// Audio File
-	fmt.Println("---- AUDIO ONLY ----")
 	formats = video.Formats.WithAudioChannels() // only get videos with audio
 	formats = formats.Select(func(f youtube.Format) bool {
-		fmt.Println(f.AudioQuality)
-		fmt.Println(f.AudioSampleRate)
-		fmt.Println(f.Quality)
-		fmt.Println(f.MimeType)
-
 		return strings.Contains(f.MimeType, "audio/"+fileExt)
 	})
 
@@ -169,11 +154,11 @@ func (a *App) Download(_dir string, videoUrl string, quality string, audioQualit
 	}
 	defer audioStream.Close()
 
-	audioFile, err := os.Create(audioFileName)
+	audioFile, err := os.CreateTemp("", audioFileName)
 	if err != nil {
 		panic(err)
 	}
-	defer audioFile.Close()
+	defer os.Remove(audioFile.Name())
 
 	_, err = io.Copy(audioFile, audioStream)
 	if err != nil {
@@ -181,14 +166,10 @@ func (a *App) Download(_dir string, videoUrl string, quality string, audioQualit
 	}
 
 	// Concat audio and video using ffmpeg
-	cmd := exec.Command("ffmpeg", "-i", videoFileName, "-i", audioFileName, "-c:v", "copy", "-c:a", "aac", outputFileName)
+	cmd := exec.Command("ffmpeg", "-i", videoFile.Name(), "-i", audioFile.Name(), "-c:v", "copy", "-c:a", "aac", outputFileName)
 	if err := cmd.Run(); err != nil {
 		panic(err)
 	}
-
-	// Delete video and audio file
-	os.Remove(videoFileName)
-	os.Remove(audioFileName)
 
 	return true
 }
