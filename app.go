@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	goRuntime "runtime"
 	"strings"
 
 	"github.com/kkdai/youtube/v2"
@@ -241,4 +243,125 @@ func (a *App) Download(_dir string, videoUrl string, quality string, audioQualit
 	} else {
 		return false
 	}
+}
+
+/* ---- INSTALL FFMPEG ---- */
+
+func (a *App) CheckFFMPEG() bool {
+	if err := exec.Command("ffmpeg", "-version").Run(); err != nil {
+		return false
+	}
+
+	return true
+}
+
+// InstallFFmpeg installs FFmpeg on the current platform
+func (a *App) InstallFFmpeg() error {
+	osType := goRuntime.GOOS
+
+	switch osType {
+	case "windows":
+		return installFFmpegWindows()
+	case "darwin":
+		return installFFmpegMac()
+	case "linux":
+		return installFFmpegLinux()
+	default:
+		return fmt.Errorf("unsupported platform: %s", osType)
+	}
+}
+
+// Install FFmpeg on Windows by downloading and extracting it
+func installFFmpegWindows() error {
+	fmt.Println("Installing FFmpeg on Windows...")
+
+	// FFmpeg download URL for Windows (you can update this to a more recent version)
+	downloadURL := "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+	zipFile := "ffmpeg-release-essentials.zip"
+	ffmpegDir := "ffmpeg"
+
+	// Download FFmpeg using curl or powershell (default in Windows)
+	cmd := exec.Command("powershell", "-Command", fmt.Sprintf("Invoke-WebRequest -Uri %s -OutFile %s", downloadURL, zipFile))
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to download FFmpeg: %v", err)
+	}
+
+	// Unzip the downloaded file
+	cmd = exec.Command("powershell", "-Command", fmt.Sprintf("Expand-Archive -Path %s -DestinationPath %s", zipFile, ffmpegDir))
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to unzip FFmpeg: %v", err)
+	}
+
+	// Move FFmpeg.exe to the current directory or add it to PATH
+	cmd = exec.Command("powershell", "-Command", fmt.Sprintf("Move-Item -Path %s/ffmpeg.exe -Destination ./ffmpeg.exe", ffmpegDir))
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to move FFmpeg: %v", err)
+	}
+
+	fmt.Println("FFmpeg installed successfully on Windows")
+	return nil
+}
+
+// Install FFmpeg on macOS using Homebrew
+func installFFmpegMac() error {
+	fmt.Println("Installing FFmpeg on macOS...")
+
+	// Check if Homebrew is installed
+	_, err := exec.LookPath("brew")
+	if err != nil {
+		return fmt.Errorf("Homebrew is not installed, please install it first: %v", err)
+	}
+
+	// Install FFmpeg using Homebrew
+	cmd := exec.Command("brew", "install", "ffmpeg")
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to install FFmpeg via Homebrew: %v", err)
+	}
+
+	fmt.Println("FFmpeg installed successfully on macOS")
+	return nil
+}
+
+// Install FFmpeg on Linux using apt or yum/dnf
+func installFFmpegLinux() error {
+	fmt.Println("Installing FFmpeg on Linux...")
+
+	// Check if the user is using apt (Debian-based distros)
+	if _, err := exec.LookPath("apt-get"); err == nil {
+		cmd := exec.Command("sudo", "apt-get", "update")
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to update package list: %v", err)
+		}
+
+		cmd = exec.Command("sudo", "apt-get", "install", "-y", "ffmpeg")
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to install FFmpeg using apt: %v", err)
+		}
+
+		fmt.Println("FFmpeg installed successfully on Linux (apt)")
+		return nil
+	}
+
+	// Check if the user is using yum/dnf (Red Hat-based distros)
+	if _, err := exec.LookPath("yum"); err == nil {
+		cmd := exec.Command("sudo", "yum", "install", "-y", "ffmpeg")
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to install FFmpeg using yum: %v", err)
+		}
+
+		fmt.Println("FFmpeg installed successfully on Linux (yum)")
+		return nil
+	}
+
+	if _, err := exec.LookPath("dnf"); err == nil {
+		cmd := exec.Command("sudo", "dnf", "install", "-y", "ffmpeg")
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to install FFmpeg using dnf: %v", err)
+		}
+
+		fmt.Println("FFmpeg installed successfully on Linux (dnf)")
+		return nil
+	}
+
+	return fmt.Errorf("unsupported Linux package manager: please use apt, yum, or dnf")
 }
