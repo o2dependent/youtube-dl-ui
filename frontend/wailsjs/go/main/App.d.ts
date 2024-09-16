@@ -6,7 +6,7 @@ export function CheckFFMPEG():Promise<boolean>;
 
 export function Download(arg1:string,arg2:string,arg3:string,arg4:string,arg5:string):Promise<boolean>;
 
-export function GetDirectory():Promise<string|boolean>;
+export function GetDirectory():Promise<string>;
 
 export function GetImportantInfo(arg1:string):Promise<main.Info>;
 

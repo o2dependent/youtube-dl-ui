@@ -83,7 +83,7 @@ func (a *App) GetImportantInfo(videoUrl string) (Info, error) {
 	return info, err
 }
 
-func (a *App) GetDirectory() (string, bool) {
+func (a *App) GetDirectory() string {
 	_dir, err := runtime.OpenDirectoryDialog(a.ctx,
 		runtime.OpenDialogOptions{DefaultDirectory: dir,
 			Title:                "Select Directory to download",
@@ -91,13 +91,13 @@ func (a *App) GetDirectory() (string, bool) {
 			CanCreateDirectories: true,
 		})
 
-	dir = _dir
-
-	if err != nil {
-		return "", true
+	if err != nil || _dir == "" {
+		return dir
 	}
 
-	return dir, false
+	dir = _dir
+
+	return dir
 }
 
 func downloadAudioOnly(client youtube.Client, video *youtube.Video, audioQuality string, fileExt string) bool {

@@ -157,6 +157,14 @@
 		}
 		downloading = false;
 	};
+
+	const setDirectory = async () => {
+		const _dir = await GetDirectory();
+		console.log({ _dir });
+		if (typeof _dir === "string") {
+			dir = _dir;
+		}
+	};
 </script>
 
 <div class="flex flex-col items-center h-full w-full">
@@ -164,13 +172,7 @@
 		<h1 class="w-full text-center">Lowky youtube-dl UI</h1>
 
 		<button
-			on:click={async () => {
-				const _dir = await GetDirectory();
-				console.log(_dir);
-				if (typeof _dir === "string") {
-					dir = _dir;
-				}
-			}}
+			on:click={setDirectory}
 			class="mb-4 h-input-sm w-full rounded-10px border border-border-input bg-background pl-4 pr-0 text-sm text-foreground flex items-center"
 		>
 			<p class="flex-grow w-full m-0 text-left" class:opacity-50={!dir}>
