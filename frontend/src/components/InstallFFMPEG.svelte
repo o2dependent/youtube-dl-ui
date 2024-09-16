@@ -1,14 +1,16 @@
 <script lang="ts">
 	import { Button } from "bits-ui";
 	import { InstallFFmpeg } from "wails/go/main/App";
+	import Downloading from "./Downloading.svelte";
 
-	export let recheckFFMPEG: () => void;
+	export let recheckFFMPEG: () => Promise<void>;
 
 	let downloading = false;
+	let rechecking = false;
 
 	const install = async () => {
 		await InstallFFmpeg();
-		recheckFFMPEG();
+		await recheckFFMPEG();
 	};
 </script>
 
@@ -46,3 +48,7 @@
 		</Button.Root>
 	</div>
 </div>
+<Downloading
+	open={downloading || rechecking}
+	text={rechecking ? "Rechecking FFMPEG" : "Downloading"}
+/>
