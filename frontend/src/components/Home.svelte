@@ -4,6 +4,8 @@
 	import InputSelect from "./InputSelect.svelte";
 	import { createErrorsStore } from "@/stores/errors";
 	import Downloading from "./Downloading.svelte";
+	import { get } from "svelte/store";
+	import ErrorAlert from "./ErrorAlert.svelte";
 
 	type Errors = {
 		audioQuality: string | null;
@@ -19,13 +21,18 @@
 	let url = "";
 	let info: Awaited<ReturnType<typeof GetImportantInfo>> | null = null;
 	let dir = "";
-	let errors = createErrorsStore<Errors>({
+	let errorsHandler = createErrorsStore<Errors>({
 		audioQuality: null,
 		fileExt: null,
 		quality: null,
 		dir: null,
 		general: null,
 	});
+	$: errors = errorsHandler.$;
+	$: errorAlertOpen = Object.values($errors).some((v) => v !== null);
+	$: errorAlertMessage = Object.values($errors)
+		.filter((v) => v !== null)
+		.join("\n");
 	let successMessage = "";
 	let downloading = false;
 
@@ -58,7 +65,7 @@
 			i = await GetImportantInfo(urlInput);
 		} catch (error) {
 			i = null;
-			errors.setKey("general", error as string);
+			errorsHandler.setKey("general", error as string);
 		}
 		if (i) {
 			url = urlInput;
@@ -112,15 +119,26 @@
 
 	const onDownload = async () => {
 		let newErrors: Partial<Errors> = {};
+		if (!dir) {
+			newErrors.dir = "Please select download directory.";
+		}
 		if (!fileExt.some((v) => v.value === fileExtInput))
-			newErrors.fileExt = "fileExt invalid";
+			newErrors.fileExt = "File extension invalid.";
 		if (!quality.some((v) => v.value === qualityInput))
-			newErrors.quality = "quality invalid";
+			newErrors.quality = "Video quality invalid.";
 		if (!audioQuality.some((v) => v.value === audioQualityInput))
-			newErrors.audioQuality = "audioQuality invalid";
-		if (newErrors.fileExt || newErrors.quality || newErrors.audioQuality) {
+			newErrors.audioQuality = "Audio quality invalid.";
+		if (!audioQualityInput && !qualityInput) {
+			newErrors.general = "Audio quality or video quality must be selected.";
+		}
+		if (
+			newErrors.fileExt ||
+			newErrors.quality ||
+			newErrors.audioQuality ||
+			newErrors.general
+		) {
 			console.log(newErrors);
-			errors.update(newErrors);
+			errorsHandler.update(newErrors);
 			return;
 		}
 		downloading = true;
@@ -135,7 +153,7 @@
 			successMessage = `${info?.title} downloaded!`;
 		} catch (error) {
 			successMessage = "";
-			errors.resetAndUpdate({ general: "Something went wrong!" });
+			errorsHandler.resetAndUpdate({ general: "Something went wrong!" });
 		}
 		downloading = false;
 	};
@@ -144,6 +162,7 @@
 <div class="flex flex-col items-center h-full w-full">
 	<div class="prose prose-invert container mx-auto px-4 w-full py-6">
 		<h1 class="w-full text-center">Lowky youtube-dl UI</h1>
+
 		<button
 			on:click={async () => {
 				const _dir = await GetDirectory();
@@ -243,7 +262,7 @@
 				</div>
 
 				<Button.Root
-					disabled={downloadDisabled || downloading}
+					disabled={downloading}
 					type="submit"
 					class="inline-flex h-12 items-center justify-center rounded-input bg-dark
 			px-[21px] text-[15px] font-semibold text-background shadow-mini
@@ -255,4 +274,9 @@
 		</div>
 	{/if}
 </div>
+<ErrorAlert
+	message={errorAlertMessage}
+	open={errorAlertOpen}
+	onOpenChange={errorsHandler.reset}
+/>
 <Downloading open={downloading} />

@@ -1,4 +1,4 @@
-import { writable } from "svelte/store";
+import { get, writable } from "svelte/store";
 
 export const createErrorsStore = <
 	T extends Record<string, (boolean | number | string) | null>,
@@ -21,5 +21,6 @@ export const createErrorsStore = <
 		setKey,
 		resetAndUpdate,
 		update,
+		$: errors,
 	};
 };
