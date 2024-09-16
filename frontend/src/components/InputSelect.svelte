@@ -8,12 +8,13 @@
 	export let inputValue: string;
 	export let name: string;
 	export let placeholder: string;
+	export let disabled: boolean = false;
 
 	let selected: Selected<string> = { value: "", label: "" };
 	$: inputValue = selected?.value ?? "";
 </script>
 
-<Select.Root {items} bind:selected>
+<Select.Root {disabled} {items} bind:selected>
 	<Select.Trigger
 		class="inline-flex h-input w-full items-center rounded-9px border border-border-input bg-background px-[11px] text-sm transition-colors placeholder:text-foreground-alt/50  focus:outline-none focus:ring-2 focus:ring-foreground focus:ring-offset-2 focus:ring-offset-background"
 		aria-label="Select a item"

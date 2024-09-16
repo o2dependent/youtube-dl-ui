@@ -2,7 +2,16 @@
 	import { Button, type Selected } from "bits-ui";
 	import { Download, GetDirectory, GetImportantInfo } from "wails/go/main/App";
 	import InputSelect from "./InputSelect.svelte";
+	import { createErrorsStore } from "@/stores/errors";
+	import Downloading from "./Downloading.svelte";
 
+	type Errors = {
+		audioQuality: string | null;
+		fileExt: string | null;
+		quality: string | null;
+		dir: string | null;
+		general: string | null;
+	};
 	/**
 	 * Data to be used for init info, download, and verification pre-download
 	 */
@@ -10,19 +19,15 @@
 	let url = "";
 	let info: Awaited<ReturnType<typeof GetImportantInfo>> | null = null;
 	let dir = "";
-	let errors: {
-		fileExt: string | null;
-		quality: string | null;
-		audioQuality: string | null;
-		dir: string | null;
-		general: string | null;
-	} = {
+	let errors = createErrorsStore<Errors>({
 		audioQuality: null,
 		fileExt: null,
 		quality: null,
 		dir: null,
 		general: null,
-	};
+	});
+	let successMessage = "";
+	let downloading = false;
 
 	/**
 	 * Select inputs and handlers
@@ -53,7 +58,7 @@
 			i = await GetImportantInfo(urlInput);
 		} catch (error) {
 			i = null;
-			errors = { ...errors, general: error as string };
+			errors.setKey("general", error as string);
 		}
 		if (i) {
 			url = urlInput;
@@ -106,19 +111,33 @@
 	};
 
 	const onDownload = async () => {
+		let newErrors: Partial<Errors> = {};
 		if (!fileExt.some((v) => v.value === fileExtInput))
-			errors.fileExt = "fileExt invalid";
+			newErrors.fileExt = "fileExt invalid";
 		if (!quality.some((v) => v.value === qualityInput))
-			errors.quality = "quality invalid";
+			newErrors.quality = "quality invalid";
 		if (!audioQuality.some((v) => v.value === audioQualityInput))
-			errors.audioQuality = "audioQuality invalid";
-		if (errors.fileExt || errors.quality || errors.audioQuality) {
-			console.log(errors);
+			newErrors.audioQuality = "audioQuality invalid";
+		if (newErrors.fileExt || newErrors.quality || newErrors.audioQuality) {
+			console.log(newErrors);
+			errors.update(newErrors);
 			return;
 		}
+		downloading = true;
 		try {
-			await Download(dir, url, qualityInput, audioQualityInput, fileExtInput);
-		} catch (error) {}
+			const res = await Download(
+				dir,
+				url,
+				qualityInput,
+				audioQualityInput,
+				fileExtInput,
+			);
+			successMessage = `${info?.title} downloaded!`;
+		} catch (error) {
+			successMessage = "";
+			errors.resetAndUpdate({ general: "Something went wrong!" });
+		}
+		downloading = false;
 	};
 </script>
 
@@ -201,18 +220,21 @@
 			>
 				<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
 					<InputSelect
+						disabled={downloading}
 						bind:items={audioQuality}
 						bind:inputValue={audioQualityInput}
 						name="audioQuality"
 						placeholder="Audio Quality"
 					/>
 					<InputSelect
+						disabled={downloading}
 						bind:items={quality}
 						bind:inputValue={qualityInput}
 						name="quality"
 						placeholder="Video Quality"
 					/>
 					<InputSelect
+						disabled={downloading}
 						bind:items={fileExt}
 						bind:inputValue={fileExtInput}
 						name="fileExt"
@@ -221,7 +243,7 @@
 				</div>
 
 				<Button.Root
-					disabled={downloadDisabled}
+					disabled={downloadDisabled || downloading}
 					type="submit"
 					class="inline-flex h-12 items-center justify-center rounded-input bg-dark
 			px-[21px] text-[15px] font-semibold text-background shadow-mini
@@ -230,34 +252,7 @@
 					Download
 				</Button.Root>
 			</form>
-			<!-- <div class="flex flex-col gap-1">
-				{#each info.qualityInfo as quality, i}
-					<div
-						class="flex gap-2 rounded-card border border-muted bg-background-alt p-3 shadow-card"
-					>
-						<div class="flex-grow items-center flex gap-1">
-							<p class="flex-grow">
-								{`${formatQuality(quality.quality)}.${quality.mimeType.split(";")[0].split("/")[1]}`}
-							</p>
-							{#if quality.mimeType.split(";")[0].split("/")[0] !== "video"}
-								<VideoOff class="h-5 w-5 opacity-50" />
-							{:else}
-								<div class="w-5 h-5" />
-							{/if}
-							{#if !quality.audioQuality}
-								<VolumeMuted class="w-5 h-5 opacity-50" />
-							{:else}
-								<div class="w-5 h-5" />
-							{/if}
-						</div>
-						<Button.Root
-							class="inline-flex h-8 items-center justify-center rounded-input bg-dark
-						px-[14px] text-[12px] font-semibold text-background shadow-mini
-						hover:bg-dark/95 active:scale-98 active:transition-all">Download</Button.Root
-						>
-					</div>
-				{/each}
-			</div> -->
 		</div>
 	{/if}
 </div>
+<Downloading open={downloading} />
