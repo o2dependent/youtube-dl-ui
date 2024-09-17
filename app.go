@@ -275,27 +275,15 @@ func (a *App) InstallFFmpeg() error {
 func installFFmpegWindows() error {
 	fmt.Println("Installing FFmpeg on Windows...")
 
-	// FFmpeg download URL for Windows (you can update this to a more recent version)
-	downloadURL := "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
-	zipFile := "ffmpeg-release-essentials.zip"
-	ffmpegDir := "ffmpeg"
+	cmd := exec.Command("winget")
+	if err := cmd.Run(); err != nil {
+		return err
+	}
 
 	// Download FFmpeg using curl or powershell (default in Windows)
-	cmd := exec.Command("powershell", "-Command", fmt.Sprintf("Invoke-WebRequest -Uri %s -OutFile %s", downloadURL, zipFile))
+	cmd = exec.Command("winget", "install", "ffmpeg")
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to download FFmpeg: %v", err)
-	}
-
-	// Unzip the downloaded file
-	cmd = exec.Command("powershell", "-Command", fmt.Sprintf("Expand-Archive -Path %s -DestinationPath %s", zipFile, ffmpegDir))
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to unzip FFmpeg: %v", err)
-	}
-
-	// Move FFmpeg.exe to the current directory or add it to PATH
-	cmd = exec.Command("powershell", "-Command", fmt.Sprintf("Move-Item -Path %s/ffmpeg.exe -Destination ./ffmpeg.exe", ffmpegDir))
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to move FFmpeg: %v", err)
 	}
 
 	fmt.Println("FFmpeg installed successfully on Windows")
@@ -309,7 +297,7 @@ func installFFmpegMac() error {
 	// Check if Homebrew is installed
 	_, err := exec.LookPath("brew")
 	if err != nil {
-		return fmt.Errorf("Homebrew is not installed, please install it first: %v", err)
+		return fmt.Errorf("homebrew is not installed, please install it first: %v", err)
 	}
 
 	// Install FFmpeg using Homebrew
