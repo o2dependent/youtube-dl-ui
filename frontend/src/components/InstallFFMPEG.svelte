@@ -2,6 +2,7 @@
 	import { Button } from "bits-ui";
 	import { InstallFFmpeg } from "wails/go/main/App";
 	import Downloading from "./Downloading.svelte";
+	import { BrowserOpenURL } from "wails/runtime/runtime";
 
 	export let recheckFFMPEG: () => Promise<void>;
 
@@ -18,12 +19,12 @@
 	<div class="prose prose-invert container mx-auto px-4 w-full py-6">
 		<h1 class="w-full text-center">FFMPEG needs to be installed</h1>
 		<p>
-			If this process does not work please visit <a
-				href="https://www.ffmpeg.org/"
-				target="_blank"
+			If this process does not work please visit <button
+				class="text-blue-500"
+				on:click={() => BrowserOpenURL("https://www.ffmpeg.org/")}
 			>
 				ffmpeg.org
-			</a> and restart this application.
+			</button> and restart this application.
 		</p>
 
 		<Button.Root

@@ -1,5 +1,6 @@
 ---
 import "./app.postcss";
+import GithubReport from "@/components/GithubReport.svelte";
 
 interface Props {
 	title: string;
@@ -18,7 +19,12 @@ const { title } = Astro.props;
 		<meta name="generator" content={Astro.generator} />
 		<title>{title}</title>
 	</head>
-	<body>
-		<slot />
+	<body class="flex flex-col">
+		<main class="flex-grow">
+			<slot />
+		</main>
+		<footer class="prose container mx-auto px-4 w-full py-2">
+			<GithubReport client:only />
+		</footer>
 	</body>
 </html>
