@@ -100,8 +100,7 @@ func (a *App) GetDirectory() string {
 	return dir
 }
 
-func downloadAudioOnly(client youtube.Client, video *youtube.Video, audioQuality string, fileExt string) bool {
-	outputFileName := dir + "/" + video.Title + "." + fileExt
+func downloadAudioOnly(client youtube.Client, video *youtube.Video, audioQuality string, fileExt string, filePath string) bool {
 	// Audio File
 	formats := video.Formats.WithAudioChannels() // only get videos with audio
 	formats = formats.Select(func(f youtube.Format) bool {
@@ -114,7 +113,7 @@ func downloadAudioOnly(client youtube.Client, video *youtube.Video, audioQuality
 	}
 	defer audioStream.Close()
 
-	audioFile, err := os.Create(outputFileName)
+	audioFile, err := os.Create(filePath)
 	if err != nil {
 		panic(err)
 	}
@@ -128,8 +127,7 @@ func downloadAudioOnly(client youtube.Client, video *youtube.Video, audioQuality
 	return true
 }
 
-func downloadVideoOnly(client youtube.Client, video *youtube.Video, quality string, fileExt string) bool {
-	outputFileName := dir + "/" + video.Title + "." + fileExt
+func downloadVideoOnly(client youtube.Client, video *youtube.Video, quality string, fileExt string, filePath string) bool {
 
 	formats := video.Formats
 	formats = formats.Select(func(f youtube.Format) bool {
@@ -142,7 +140,7 @@ func downloadVideoOnly(client youtube.Client, video *youtube.Video, quality stri
 	}
 	defer stream.Close()
 
-	videoFile, err := os.Create(outputFileName)
+	videoFile, err := os.Create(filePath)
 	if err != nil {
 		panic(err)
 	}
@@ -156,11 +154,10 @@ func downloadVideoOnly(client youtube.Client, video *youtube.Video, quality stri
 	return true
 }
 
-func downloadAudioVideo(client youtube.Client, video *youtube.Video, quality string, audioQuality string, fileExt string) bool {
+func downloadAudioVideo(client youtube.Client, video *youtube.Video, quality string, audioQuality string, fileExt string, filePath string) bool {
 
 	videoFileName := "tmp-video"
 	audioFileName := "tmp-audio"
-	outputFileName := dir + "/" + video.Title + "." + fileExt
 
 	// Video File
 	formats := video.Formats
@@ -209,7 +206,7 @@ func downloadAudioVideo(client youtube.Client, video *youtube.Video, quality str
 	}
 
 	// Concat audio and video using ffmpeg
-	cmd := exec.Command("ffmpeg", "-i", videoFile.Name(), "-i", audioFile.Name(), "-c:v", "copy", "-c:a", "aac", outputFileName)
+	cmd := exec.Command("ffmpeg", "-i", videoFile.Name(), "-i", audioFile.Name(), "-c:v", "copy", "-c:a", "aac", filePath)
 	if err := cmd.Run(); err != nil {
 		panic(err)
 	}
@@ -229,17 +226,21 @@ func (a *App) Download(_dir string, videoUrl string, quality string, audioQualit
 	client := youtube.Client{}
 
 	video, err := client.GetVideo(videoID)
+	if err != nil {
+		panic(err)
+	}
 
+	filePath, err := getUniqueFileName(dir, video.Title+"."+fileExt)
 	if err != nil {
 		panic(err)
 	}
 
 	if quality != "" && audioQuality == "" { // VIDEO ONLY
-		return downloadVideoOnly(client, video, quality, fileExt)
+		return downloadVideoOnly(client, video, quality, fileExt, filePath)
 	} else if quality == "" && audioQuality != "" { // AUDIO ONLY
-		return downloadAudioOnly(client, video, audioQuality, fileExt)
+		return downloadAudioOnly(client, video, audioQuality, fileExt, filePath)
 	} else if quality != "" && audioQuality != "" { // AUDIO & VIDEO
-		return downloadAudioVideo(client, video, quality, audioQuality, fileExt)
+		return downloadAudioVideo(client, video, quality, audioQuality, fileExt, filePath)
 	} else {
 		return false
 	}
