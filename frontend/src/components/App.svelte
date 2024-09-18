@@ -6,6 +6,7 @@
 	import Downloading from "./Downloading.svelte";
 	import { get } from "svelte/store";
 	import ErrorAlert from "./ErrorAlert.svelte";
+	import { checkFFMPEG } from "@/stores/ffmpegInstalled";
 
 	type Errors = {
 		audioQuality: string | null;
@@ -35,6 +36,7 @@
 		.join("\n");
 	let successMessage = "";
 	let downloading = false;
+	let checkingFfmpeg = false;
 
 	/**
 	 * Select inputs and handlers
@@ -118,6 +120,15 @@
 
 	const onDownload = async () => {
 		let newErrors: Partial<Errors> = {};
+
+		checkingFfmpeg = true;
+		try {
+			await checkFFMPEG();
+		} catch (error) {
+			checkingFfmpeg = false;
+			return;
+		}
+
 		if (!dir) {
 			newErrors.dir = "Please select download directory.";
 		}
@@ -141,6 +152,7 @@
 			return;
 		}
 		downloading = true;
+		checkingFfmpeg = false;
 		try {
 			const res = await Download(
 				dir,
@@ -287,4 +299,7 @@
 	open={errorAlertOpen}
 	onOpenChange={errorsHandler.reset}
 />
-<Downloading open={downloading} />
+<Downloading
+	open={downloading || checkingFfmpeg}
+	text={checkingFfmpeg ? "Checking FFMPEG" : "Downloading"}
+/>

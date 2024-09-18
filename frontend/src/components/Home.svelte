@@ -4,22 +4,15 @@
 	import App from "./App.svelte";
 	import InstallFfmpeg from "./InstallFFMPEG.svelte";
 	import { CheckFFMPEG } from "wails/go/main/App";
+	import { checkFFMPEG, ffmpegInstalled } from "@/stores/ffmpegInstalled";
 
-	let ffmpegInstalled = false;
 	let loading = true;
+	let installationError = false;
 
 	onMount(async () => {
-		try {
-			ffmpegInstalled = await CheckFFMPEG();
-		} catch (error) {}
+		await checkFFMPEG();
 		loading = false;
 	});
-
-	const recheckFFMPEG = async () => {
-		try {
-			ffmpegInstalled = await CheckFFMPEG();
-		} catch (error) {}
-	};
 </script>
 
 {#if loading}
@@ -32,5 +25,5 @@
 {:else if ffmpegInstalled}
 	<App />
 {:else}
-	<InstallFfmpeg {recheckFFMPEG} />
+	<InstallFfmpeg />
 {/if}

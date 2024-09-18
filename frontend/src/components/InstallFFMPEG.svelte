@@ -3,15 +3,14 @@
 	import { InstallFFmpeg } from "wails/go/main/App";
 	import Downloading from "./Downloading.svelte";
 	import { BrowserOpenURL } from "wails/runtime/runtime";
-
-	export let recheckFFMPEG: () => Promise<void>;
+	import { checkFFMPEG } from "@/stores/ffmpegInstalled";
 
 	let downloading = false;
 	let rechecking = false;
 
 	const install = async () => {
 		await InstallFFmpeg();
-		await recheckFFMPEG();
+		await checkFFMPEG();
 	};
 </script>
 
@@ -29,7 +28,7 @@
 
 		<Button.Root
 			disabled={downloading}
-			on:click={recheckFFMPEG}
+			on:click={checkFFMPEG}
 			type="button"
 			class="mx-auto inline-flex h-12 items-center justify-center rounded-input bg-dark
 			px-[21px] text-[15px] font-semibold text-background shadow-mini
