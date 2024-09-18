@@ -24,7 +24,7 @@
 				on:click={() => BrowserOpenURL("https://www.ffmpeg.org/")}
 			>
 				ffmpeg.org
-			</button> and restart this application.
+			</button> and recheck FFMPEG.
 		</p>
 
 		<Button.Root

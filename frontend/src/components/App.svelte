@@ -89,23 +89,22 @@
 			}
 			(audioQuality = newAudioQuality.map((v) => ({
 				value: v,
-				label: v ? v.replace("AUDIO_QUALITY_", "").toLowerCase() : "none",
+				label: v ? v.replace("AUDIO_QUALITY_", "").toLowerCase() : "muted",
 			}))),
 				(fileExt = newFileExt.map((v) => ({ value: v, label: v })));
 			quality = [
-				{ value: "", label: "none" },
+				{ value: "", label: "no video" },
 				...newQuality.map((v) => ({ value: v, label: formatQuality(v) })),
 			];
-
-			qualityInput = "";
-			audioQualityInput = "";
-			fileExtInput = "";
 		} else {
 			info = null;
 			audioQuality = [];
 			fileExt = [];
 			quality = [];
 		}
+		qualityInput = "";
+		audioQualityInput = "";
+		fileExtInput = "";
 	};
 
 	const formatQuality = (q: string): string => {
@@ -171,44 +170,51 @@
 	<div class="prose prose-invert container mx-auto px-4 w-full py-6">
 		<h1 class="w-full text-center">Lowky youtube-dl UI</h1>
 
-		<button
-			on:click={setDirectory}
-			class="mb-4 h-input-sm w-full rounded-10px border border-border-input bg-background pl-4 pr-0 text-sm text-foreground flex items-center"
-		>
-			<p class="flex-grow w-full m-0 text-left" class:opacity-50={!dir}>
-				{!!dir ? dir : "Select directory"}
-			</p>
-			<Button.Root
-				type="button"
-				class="inline-flex h-full items-center justify-center rounded-input bg-dark
-			px-[21px] text-[15px] font-semibold text-background shadow-mini
-			hover:bg-dark/95 active:scale-98 active:transition-all"
+		<label class="flex flex-col gap-1">
+			<p class="m-0">Destination Path</p>
+			<button
+				on:click={setDirectory}
+				class="mb-4 h-input-sm w-full rounded-10px border border-border-input bg-background pl-4 pr-0 text-sm text-foreground flex items-center"
 			>
-				Select
-			</Button.Root>
-		</button>
-		<!-- FORM -->
-		<form on:submit|preventDefault={findVideoInfo} class="w-full flex gap-2">
-			<div class="relative w-full">
-				<span class="sr-only">Width</span>
-				<span
-					aria-hidden
-					class="absolute left-3 top-4 text-xxs text-muted-foreground">URL</span
+				<p class="flex-grow w-full m-0 text-left" class:opacity-50={!dir}>
+					{!!dir ? dir : "Select directory"}
+				</p>
+				<Button.Root
+					type="button"
+					class="inline-flex h-full items-center justify-center rounded-input bg-dark
+				px-[21px] text-[15px] font-semibold text-background shadow-mini
+				hover:bg-dark/95 active:scale-98 active:transition-all"
 				>
-				<input
-					class="h-input w-full rounded-10px border border-border-input bg-background pl-10 pr-2 text-sm text-foreground"
-					bind:value={urlInput}
-				/>
-			</div>
-			<Button.Root
-				type="submit"
-				class="inline-flex h-12 items-center justify-center rounded-input bg-dark
-			px-[21px] text-[15px] font-semibold text-background shadow-mini
-			hover:bg-dark/95 active:scale-98 active:transition-all"
-			>
-				Submit
-			</Button.Root>
-		</form>
+					Select
+				</Button.Root>
+			</button>
+		</label>
+		<!-- FORM -->
+		<div class="flex flex-col gap-1">
+			<p class="m-0">Youtube URL</p>
+			<form on:submit|preventDefault={findVideoInfo} class="w-full flex gap-2">
+				<div class="relative w-full">
+					<span class="sr-only">URL</span>
+					<span
+						aria-hidden
+						class="absolute left-3 top-4 text-xxs text-muted-foreground"
+						>URL</span
+					>
+					<input
+						class="h-input w-full rounded-10px border border-border-input bg-background pl-10 pr-2 text-sm text-foreground"
+						bind:value={urlInput}
+					/>
+				</div>
+				<Button.Root
+					type="submit"
+					class="inline-flex h-12 items-center justify-center rounded-input bg-dark
+				px-[21px] text-[15px] font-semibold text-background shadow-mini
+				hover:bg-dark/95 active:scale-98 active:transition-all"
+				>
+					Submit
+				</Button.Root>
+			</form>
+		</div>
 	</div>
 	<!-- INFO -->
 	{#if info !== null}
