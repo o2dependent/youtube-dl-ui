@@ -180,7 +180,7 @@
 
 <div class="flex flex-col items-center h-full w-full">
 	<div class="prose prose-invert container mx-auto px-4 w-full py-6">
-		<h1 class="w-full text-center">Lowky youtube-dl UI</h1>
+		<h1 class="w-full text-center">Lowky Youtube Downloader</h1>
 
 		<label class="flex flex-col gap-1">
 			<p class="m-0">Destination Path</p>
