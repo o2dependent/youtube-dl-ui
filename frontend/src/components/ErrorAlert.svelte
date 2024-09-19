@@ -19,12 +19,16 @@
 			transition={flyAndScale}
 			class="fixed left-[50%] top-[50%] z-50 grid w-full max-w-[94%] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-card-lg border bg-background p-7 shadow-popover outline-none sm:max-w-lg md:w-full"
 		>
-			<div class="flex flex-col gap-4 pb-6">
+			<div class="flex flex-col gap-4">
 				<AlertDialog.Title class="text-lg font-semibold tracking-tight"
 					>Errors</AlertDialog.Title
 				>
 				<AlertDialog.Description class="text-sm">
-					<pre class="text-red-500">{message}</pre>
+					<pre class="text-red-500 text-wrap max-w-full">{message}</pre>
+					<p class="text-xs opacity-50 pt-4">
+						Some messages are from the YouTube API. Infer the issue if it seems
+						confusing or report to this project's Github.
+					</p>
 				</AlertDialog.Description>
 			</div>
 			<div class="flex w-full items-center justify-center gap-2">
