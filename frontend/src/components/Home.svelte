@@ -3,7 +3,6 @@
 	import { onMount } from "svelte";
 	import App from "./App.svelte";
 	import InstallFfmpeg from "./InstallFFMPEG.svelte";
-	import { CheckFFMPEG } from "wails/go/main/App";
 	import { checkFFMPEG, ffmpegInstalled } from "@/stores/ffmpegInstalled";
 
 	let loading = true;
@@ -22,7 +21,7 @@
 	>
 		Checking FFMPEG
 	</p>
-{:else if ffmpegInstalled}
+{:else if $ffmpegInstalled}
 	<App />
 {:else}
 	<InstallFfmpeg />
