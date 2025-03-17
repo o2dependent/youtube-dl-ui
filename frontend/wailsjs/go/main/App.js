@@ -17,7 +17,3 @@ export function GetDirectory() {
 export function GetImportantInfo(arg1) {
   return window['go']['main']['App']['GetImportantInfo'](arg1);
 }
-
-export function InstallFFmpeg() {
-  return window['go']['main']['App']['InstallFFmpeg']();
-}

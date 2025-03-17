@@ -2,16 +2,21 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	goRuntime "runtime"
 	"strings"
 
 	"github.com/kkdai/youtube/v2"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
+
+//go:embed embeds/ffmpeg
+var ffmpegBinary []byte
 
 // App struct
 type App struct {
@@ -98,6 +103,32 @@ func (a *App) GetDirectory() string {
 	dir = _dir
 
 	return dir
+}
+
+func getFFmpegPath() (string, error) {
+	// Determine OS-specific filename
+	filename := "ffmpeg"
+	if goRuntime.GOOS == "windows" {
+		filename += ".exe"
+	}
+
+	// Create a temporary directory
+	tempDir := os.TempDir()
+	ffmpegPath := filepath.Join(tempDir, filename)
+
+	// Write embedded binary to temp file
+	if err := os.WriteFile(ffmpegPath, ffmpegBinary, 0755); err != nil {
+		return "", fmt.Errorf("failed to write FFmpeg: %v", err)
+	}
+
+	// Set executable permissions (non-Windows)
+	if goRuntime.GOOS != "windows" {
+		if err := os.Chmod(ffmpegPath, 0755); err != nil {
+			return "", fmt.Errorf("failed to set permissions: %v", err)
+		}
+	}
+
+	return ffmpegPath, nil
 }
 
 func downloadAudioOnly(client youtube.Client, video *youtube.Video, audioQuality string, fileExt string, filePath string) bool {
@@ -206,7 +237,11 @@ func downloadAudioVideo(client youtube.Client, video *youtube.Video, quality str
 	}
 
 	// Concat audio and video using ffmpeg
-	cmd := exec.Command("ffmpeg", "-i", videoFile.Name(), "-i", audioFile.Name(), "-c:v", "copy", "-c:a", "aac", filePath)
+	ffmpegPath, err := getFFmpegPath()
+	if err != nil {
+		panic(err)
+	}
+	cmd := exec.Command(ffmpegPath, "-i", videoFile.Name(), "-i", audioFile.Name(), "-c:v", "copy", "-c:a", "aac", filePath)
 	if err := cmd.Run(); err != nil {
 		panic(err)
 	}
@@ -225,7 +260,9 @@ func (a *App) Download(_dir string, videoUrl string, quality string, audioQualit
 
 	client := youtube.Client{}
 
+	fmt.Println(videoID)
 	video, err := client.GetVideo(videoID)
+	fmt.Println(video)
 	if err != nil {
 		panic(err)
 	}
@@ -249,108 +286,13 @@ func (a *App) Download(_dir string, videoUrl string, quality string, audioQualit
 /* ---- INSTALL FFMPEG ---- */
 
 func (a *App) CheckFFMPEG() bool {
-	if err := exec.Command("ffmpeg", "-version").Run(); err != nil {
+	ffmpegPath, err := getFFmpegPath()
+	if err != nil {
+		panic(err)
+	}
+	if err := exec.Command(ffmpegPath, "-version").Run(); err != nil {
 		return false
 	}
 
 	return true
-}
-
-// InstallFFmpeg installs FFmpeg on the current platform
-func (a *App) InstallFFmpeg() error {
-	osType := goRuntime.GOOS
-
-	switch osType {
-	case "windows":
-		return installFFmpegWindows()
-	case "darwin":
-		return installFFmpegMac()
-	case "linux":
-		return installFFmpegLinux()
-	default:
-		return fmt.Errorf("unsupported platform: %s", osType)
-	}
-}
-
-// Install FFmpeg on Windows by downloading and extracting it
-func installFFmpegWindows() error {
-	fmt.Println("Installing FFmpeg on Windows...")
-
-	cmd := exec.Command("winget")
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-
-	// Download FFmpeg using curl or powershell (default in Windows)
-	cmd = exec.Command("winget", "install", "ffmpeg")
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to download FFmpeg: %v", err)
-	}
-
-	fmt.Println("FFmpeg installed successfully on Windows")
-	return nil
-}
-
-// Install FFmpeg on macOS using Homebrew
-func installFFmpegMac() error {
-	fmt.Println("Installing FFmpeg on macOS...")
-
-	// Check if Homebrew is installed
-	_, err := exec.LookPath("brew")
-	if err != nil {
-		return fmt.Errorf("homebrew is not installed, please install it first: %v", err)
-	}
-
-	// Install FFmpeg using Homebrew
-	cmd := exec.Command("brew", "install", "ffmpeg")
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to install FFmpeg via Homebrew: %v", err)
-	}
-
-	fmt.Println("FFmpeg installed successfully on macOS")
-	return nil
-}
-
-// Install FFmpeg on Linux using apt or yum/dnf
-func installFFmpegLinux() error {
-	fmt.Println("Installing FFmpeg on Linux...")
-
-	// Check if the user is using apt (Debian-based distros)
-	if _, err := exec.LookPath("apt-get"); err == nil {
-		cmd := exec.Command("sudo", "apt-get", "update")
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("failed to update package list: %v", err)
-		}
-
-		cmd = exec.Command("sudo", "apt-get", "install", "-y", "ffmpeg")
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("failed to install FFmpeg using apt: %v", err)
-		}
-
-		fmt.Println("FFmpeg installed successfully on Linux (apt)")
-		return nil
-	}
-
-	// Check if the user is using yum/dnf (Red Hat-based distros)
-	if _, err := exec.LookPath("yum"); err == nil {
-		cmd := exec.Command("sudo", "yum", "install", "-y", "ffmpeg")
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("failed to install FFmpeg using yum: %v", err)
-		}
-
-		fmt.Println("FFmpeg installed successfully on Linux (yum)")
-		return nil
-	}
-
-	if _, err := exec.LookPath("dnf"); err == nil {
-		cmd := exec.Command("sudo", "dnf", "install", "-y", "ffmpeg")
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("failed to install FFmpeg using dnf: %v", err)
-		}
-
-		fmt.Println("FFmpeg installed successfully on Linux (dnf)")
-		return nil
-	}
-
-	return fmt.Errorf("unsupported Linux package manager: please use apt, yum, or dnf")
 }

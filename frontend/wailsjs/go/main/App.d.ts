@@ -9,5 +9,3 @@ export function Download(arg1:string,arg2:string,arg3:string,arg4:string,arg5:st
 export function GetDirectory():Promise<string>;
 
 export function GetImportantInfo(arg1:string):Promise<main.Info>;
-
-export function InstallFFmpeg():Promise<void>;

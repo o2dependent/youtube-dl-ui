@@ -2,7 +2,6 @@
 	import { fade } from "svelte/transition";
 	import { onMount } from "svelte";
 	import App from "./App.svelte";
-	import InstallFfmpeg from "./InstallFFMPEG.svelte";
 	import { checkFFMPEG, ffmpegInstalled } from "@/stores/ffmpegInstalled";
 
 	let loading = true;
@@ -24,5 +23,9 @@
 {:else if $ffmpegInstalled}
 	<App />
 {:else}
-	<InstallFfmpeg />
+	<div>
+		<p>Something went wrong!</p>
+		<p>Contact the developer for help!</p>
+		<a href="mailto:131eolsen@gmail.com">131eolsen@gmail.com</a>
+	</div>
 {/if}

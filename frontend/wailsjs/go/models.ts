@@ -39,3 +39,24 @@ export namespace main {
 
 }
 
+export namespace youtube {
+	
+	export class Thumbnail {
+	    URL: string;
+	    Width: number;
+	    Height: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Thumbnail(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.URL = source["URL"];
+	        this.Width = source["Width"];
+	        this.Height = source["Height"];
+	    }
+	}
+
+}
+
