@@ -125,8 +125,9 @@
 		try {
 			await checkFFMPEG();
 		} catch (error) {
-			checkingFfmpeg = false;
 			return;
+		} finally {
+			checkingFfmpeg = false;
 		}
 
 		if (!dir) {
@@ -154,14 +155,20 @@
 		downloading = true;
 		checkingFfmpeg = false;
 		try {
-			const res = await Download(
+			const success = await Download(
 				dir,
 				url,
 				qualityInput,
 				audioQualityInput,
 				fileExtInput,
 			);
-			successMessage = `${info?.title} downloaded!`;
+			if (success) successMessage = `"${info?.title}" downloaded!`;
+			else {
+				successMessage = `"${info?.title}" failed to downloaded.`;
+				errorsHandler.resetAndUpdate({
+					general: `"${info?.title}" failed to downloaded.`,
+				});
+			}
 		} catch (error) {
 			successMessage = "";
 			errorsHandler.resetAndUpdate({ general: "Something went wrong!" });

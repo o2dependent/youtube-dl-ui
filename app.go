@@ -2,17 +2,23 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	_ "embed"
 	"fmt"
 	"io"
+	"net"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	goRuntime "runtime"
 	"strings"
+	"time"
 
 	"github.com/kkdai/youtube/v2"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"golang.org/x/net/http/httpproxy"
 )
 
 //go:embed embeds/ffmpeg
@@ -56,7 +62,13 @@ func (a *App) GetImportantInfo(videoUrl string) (Info, error) {
 		return Info{}, err
 	}
 
-	client := youtube.Client{}
+	client := youtube.Client{
+		HTTPClient: &http.Client{
+			Transport: &http.Transport{
+				Proxy: http.ProxyFromEnvironment,
+			},
+		},
+	}
 
 	video, err := client.GetVideo(videoID)
 	if err != nil {
@@ -67,7 +79,7 @@ func (a *App) GetImportantInfo(videoUrl string) (Info, error) {
 	formats := video.Formats
 	formats.Sort()
 
-	for i := 0; i < len(video.Formats); i++ {
+	for i := range video.Formats {
 		f := formats[i]
 
 		qualityInfo = append(qualityInfo, QualityInfo{
@@ -140,19 +152,22 @@ func downloadAudioOnly(client youtube.Client, video *youtube.Video, audioQuality
 
 	audioStream, _, err := client.GetStream(video, &formats[0])
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
+		return false
 	}
 	defer audioStream.Close()
 
 	audioFile, err := os.Create(filePath)
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
+		return false
 	}
 	defer audioFile.Close()
 
 	_, err = io.Copy(audioFile, audioStream)
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
+		return false
 	}
 
 	return true
@@ -167,19 +182,22 @@ func downloadVideoOnly(client youtube.Client, video *youtube.Video, quality stri
 
 	stream, _, err := client.GetStream(video, &formats[0])
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
+		return false
 	}
 	defer stream.Close()
 
 	videoFile, err := os.Create(filePath)
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
+		return false
 	}
 	defer videoFile.Close()
 
 	_, err = io.Copy(videoFile, stream)
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
+		return false
 	}
 
 	return true
@@ -195,22 +213,27 @@ func downloadAudioVideo(client youtube.Client, video *youtube.Video, quality str
 	formats = formats.Select(func(f youtube.Format) bool {
 		return f.Quality == quality && strings.Contains(f.MimeType, "video/"+fileExt)
 	})
+	fmt.Println(formats)
 
-	stream, _, err := client.GetStream(video, &formats[0])
+	stream, size, err := client.GetStream(video, &formats[0])
+	fmt.Println(size)
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
+		return false
 	}
 	defer stream.Close()
 
 	videoFile, err := os.CreateTemp("", videoFileName)
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
+		return false
 	}
 	defer os.Remove(videoFile.Name())
 
 	_, err = io.Copy(videoFile, stream)
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
+		return false
 	}
 
 	// Audio File
@@ -221,29 +244,34 @@ func downloadAudioVideo(client youtube.Client, video *youtube.Video, quality str
 
 	audioStream, _, err := client.GetStream(video, &formats[0])
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
+		return false
 	}
 	defer audioStream.Close()
 
 	audioFile, err := os.CreateTemp("", audioFileName)
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
+		return false
 	}
 	defer os.Remove(audioFile.Name())
 
 	_, err = io.Copy(audioFile, audioStream)
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
+		return false
 	}
 
 	// Concat audio and video using ffmpeg
 	ffmpegPath, err := getFFmpegPath()
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
+		return false
 	}
 	cmd := exec.Command(ffmpegPath, "-i", videoFile.Name(), "-i", audioFile.Name(), "-c:v", "copy", "-c:a", "aac", filePath)
 	if err := cmd.Run(); err != nil {
-		panic(err)
+		fmt.Println(err.Error())
+		return false
 	}
 
 	return true
@@ -258,11 +286,32 @@ func (a *App) Download(_dir string, videoUrl string, quality string, audioQualit
 		panic(err)
 	}
 
-	client := youtube.Client{}
+	proxyFunc := httpproxy.FromEnvironment().ProxyFunc()
+	httpTransport := &http.Transport{
+		// Proxy: http.ProxyFromEnvironment() does not work. Why?
+		Proxy: func(r *http.Request) (uri *url.URL, err error) {
+			return proxyFunc(r.URL)
+		},
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+		IdleConnTimeout:       60 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		ForceAttemptHTTP2:     true,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+	}
 
-	fmt.Println(videoID)
+	HTTPClient := &http.Client{Transport: httpTransport}
+
+	client := youtube.Client{
+		HTTPClient: HTTPClient,
+	}
+
 	video, err := client.GetVideo(videoID)
-	fmt.Println(video)
 	if err != nil {
 		panic(err)
 	}
